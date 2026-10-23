@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Investigation Casebook</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%227%22 fill=%22%231f8a4c%22/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/static/base.css">
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<header class="top">
+  <div class="logo" style="background:#1f8a4c">CB</div>
+  <div><h1>Investigation Casebook</h1><div class="sub">Capture evidence, preserve hashes, write findings, prove chain of custody</div></div>
+  <div class="spacer"></div>
+  <span id="who" class="small muted"></span>
+  <button id="logout" class="ghost sm" hidden>Sign out</button>
+  <button id="theme" class="ghost sm">◐ Theme</button>
+</header>
+<main>
+  <section class="card auth" id="auth" hidden>
+    <h2 id="authTitle">Sign in</h2>
+    <p class="small muted" id="authHint"></p>
+    <label for="aUser">Username</label><input id="aUser" type="text" autocomplete="username">
+    <label for="aPass">Password</label><input id="aPass" type="password" autocomplete="current-password">
+    <button id="aGo" style="margin-top:12px;width:100%">Sign in</button>
+  </section>
+
+  <div class="grid cols-side" id="appView" hidden>
+    <aside class="grid" style="align-content:start">
+      <section class="card">
+        <h2>Cases</h2>
+        <div id="cases" class="small"></div>
+        <details style="margin-top:8px"><summary>New case</summary>
+          <input id="cTitle" type="text" placeholder="Title" style="margin-top:6px">
+          <textarea id="cSummary" placeholder="Scope and objective" style="margin-top:6px;min-height:60px;font-family:inherit"></textarea>
+          <select id="cTlp" style="margin-top:6px"><option>TLP:CLEAR</option><option>TLP:GREEN</option><option selected>TLP:AMBER</option><option>TLP:AMBER+STRICT</option><option>TLP:RED</option></select>
+          <button id="cAdd" class="ghost sm" style="margin-top:6px">Create case</button>
+        </details>
+        <button id="demo" class="ghost" style="margin-top:10px;width:100%">Load demo case</button>
+      </section>
+      <section class="card" id="addCard" hidden>
+        <h2>Add evidence</h2>
+        <div class="tabs" id="eTabs"><button data-t="url" class="active">Capture URL</button><button data-t="file">File</button><button data-t="note">Note</button></div>
+        <div data-p="url"><input id="eUrl" type="url" placeholder="https://…"><label class="small"><input type="checkbox" id="eArchive"> Also request a Wayback Machine snapshot</label></div>
+        <div data-p="file" hidden><input id="eFile" type="file"></div>
+        <div data-p="note" hidden><input id="eNoteTitle" type="text" placeholder="Note title"></div>
+        <textarea id="eNote" placeholder="Context: why this matters, how it was found" style="margin-top:6px;min-height:56px;font-family:inherit"></textarea>
+        <button id="eAdd" style="margin-top:6px;width:100%">Add to case</button>
+        <div class="hint">URL captures store the exact bytes received with their SHA-256, the retrieval time, status code, key headers and redirect chain.</div>
+      </section>
+      <section class="card" id="adminCard" hidden>
+        <h2>Team</h2>
+        <div id="users" class="small"></div>
+        <details style="margin-top:6px"><summary>Add user</summary>
+          <input id="uName" type="text" placeholder="username" style="margin-top:6px"><input id="uPass" type="password" placeholder="password (10+ chars)" style="margin-top:6px">
+          <select id="uRole" style="margin-top:6px"><option>analyst</option><option>reviewer</option><option>viewer</option><option>admin</option></select>
+          <button id="uAdd" class="ghost sm" style="margin-top:6px">Add user</button></details>
+      </section>
+    </aside>
+
+    <div class="grid" style="align-content:start" id="caseView">
+      <div class="empty" id="noCase">Select or create a case.</div>
+      <section class="card" id="caseHead" hidden></section>
+      <div class="grid cols-2" id="caseBody" hidden>
+        <section class="card"><div class="row"><h2 style="margin:0">Findings</h2><button id="fNew" class="ghost sm shrink">New finding</button></div><div id="findings" style="margin-top:10px"></div></section>
+        <section class="card"><h2>Evidence</h2><div id="evidence"></div></section>
+      </div>
+      <section class="card" id="fEditor" hidden>
+        <h2>Finding</h2>
+        <input id="fTitle" type="text" placeholder="One-sentence assessment">
+        <textarea id="fBody" placeholder="Reasoning. Cite evidence as [E1], [E2]…" style="margin-top:6px;min-height:120px;font-family:inherit"></textarea>
+        <div class="row" style="margin-top:6px"><select id="fConf"></select></div>
+        <div class="small muted" style="margin-top:8px">Supporting evidence</div>
+        <div id="fEv" class="evpick"></div>
+        <div class="row" style="margin-top:8px"><button id="fSave">Save finding</button><button id="fCancel" class="ghost">Cancel</button></div>
+      </section>
+      <section class="card" id="previewCard" hidden><div class="row"><h2 style="margin:0" id="pvTitle">Preview</h2><button class="ghost sm shrink" id="pvClose">Close</button></div><pre id="pv" style="white-space:pre-wrap;max-height:380px;overflow:auto"></pre><div class="hint">Shown as text only. Captured pages are never rendered, because they may contain hostile code.</div></section>
+      <section class="card" id="auditCard" hidden><div class="row"><h2 style="margin:0">Chain of custody</h2><button id="verify" class="ghost sm shrink">Verify integrity</button></div>
+        <div id="verifyOut" style="margin:8px 0"></div><div id="audit" class="scroll" style="max-height:360px"></div></section>
+      <section class="card" id="bundleCard" hidden><h2>Verify a bundle</h2><input id="bFile" type="file" accept=".zip"><div id="bOut" class="small" style="margin-top:8px"></div></section>
+    </div>
+  </div>
+</main>
+<script src="/static/base.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>
